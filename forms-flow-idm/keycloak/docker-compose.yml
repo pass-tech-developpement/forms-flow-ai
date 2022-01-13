@@ -5,8 +5,10 @@ volumes:
   postgres:
   
 networks:
-  keycloak-server-network:
-    driver: 'bridge'
+  web:
+    external: 
+      name: web
+     
 
 services:
   keycloak-db:
@@ -22,7 +24,7 @@ services:
     ports:
       - 5431:5431
     networks:
-      - keycloak-server-network
+      - web
 
   keycloak:
     image: jboss/keycloak:14.0.0
@@ -40,10 +42,21 @@ services:
       - DB_PASSWORD=${KEYCLOAK_JDBC_PASSWORD:-changeme}
       - KEYCLOAK_USER=${KEYCLOAK_ADMIN_USER:-admin}
       - KEYCLOAK_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-changeme}
+      - PROXY_ADDRESS_FORWARDING=true
     ports:
       - 8080:8080
     depends_on:
       - keycloak-db
+    labels:
+      - traefik.http.routers.keycloak.entrypoints=insecure
+      - traefik.http.routers.keycloak.rule=Host(`dev-tls.tech.fr`)
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.keycloak.middlewares=https-redirect@docker
+      - traefik.http.routers.keycloaks.entrypoints=secure
+      - traefik.http.routers.keycloaks.rule=Host(`dev-tls.tech.fr`)
+      - traefik.http.routers.keycloaks.tls=true
+      - traefik.http.routers.keycloaks.tls.certresolver=letsencrypt      
     networks:
-      - keycloak-server-network
-   
+      - web
+

@@ -17,16 +17,37 @@ services:
       - '7000:5000'
     environment:
       REDASH_WEB_WORKERS: 4
+    labels:
+      - traefik.http.routers.redash.entrypoints=insecure
+      - traefik.http.routers.redash.rule=Host(`dev-redash.tech.fr`)
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.redash.middlewares=https-redirect@docker
+      - traefik.http.routers.redashs.entrypoints=secure
+      - traefik.http.routers.redashs.rule=Host(`dev-redash.tech.fr`)
+      - traefik.http.routers.redashs.tls=true
+      - traefik.http.routers.redashs.tls.certresolver=letsencrypt      
+    networks:
+      - web
+
+
   scheduler:
     <<: *redash-service
     command: scheduler
+    networks:
+      - web
     depends_on:
       - server
+
   scheduled_worker:
     <<: *redash-service
+    networks:
+      - web
     command: worker
   adhoc_worker:
     <<: *redash-service
+    networks:
+      - web    
     command: worker
   worker:
     <<: *redash-service
@@ -34,17 +55,23 @@ services:
     environment:
       QUEUES: "periodic emails default"
       WORKERS_COUNT: 1
+    networks:
+      - web    
     depends_on:
       - server
   redis:
     image: redis:6-alpine
     restart: always
+    networks:
+      - web    
   postgres:
     image: postgres:9.6-alpine
     ports:
       - '7432:5432'
     restart: always
     env_file: .env
+    networks:
+      - web    
     volumes:
       - ./postgres/analytics:/var/lib/postgresql/data
   # Uncomment the following to enable redash mail server
@@ -53,3 +80,10 @@ services:
   #   ports:
   #     - "1080:80"
   #   restart: unless-stopped
+
+
+networks:
+  web:
+    external: 
+      name: web
+  

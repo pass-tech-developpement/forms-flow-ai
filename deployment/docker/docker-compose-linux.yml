@@ -2,6 +2,8 @@
 version: '3.7'
 
 services:
+
+  # Base de données Camunda
   forms-flow-bpm-db:
     image: postgres:latest
     container_name: forms-flow-bpm-db
@@ -17,6 +19,7 @@ services:
     networks:
       - forms-flow-network
 
+  # Camunda
   forms-flow-bpm:
     container_name: forms-flow-bpm
     build:
@@ -62,9 +65,20 @@ services:
       - WEBSOCKET_ENCRYPT_KEY=${WEBSOCKET_ENCRYPT_KEY:-giert989jkwrgb@DR55}
       - DATA_BUFFER_SIZE=${DATA_BUFFER_SIZE:-2}
       - IDENTITY_PROVIDER_MAX_RESULT_SIZE=${IDENTITY_PROVIDER_MAX_RESULT_SIZE:-250}
+    labels:
+      - traefik.http.routers.forms-flow-bpm.entrypoints=insecure
+      - traefik.http.routers.forms-flow-bpm.rule=Host(`dev-forms-flow-bpm.tech.fr`)
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.forms-flow-bpm.middlewares=https-redirect@docker
+      - traefik.http.routers.forms-flow-bpms.entrypoints=secure
+      - traefik.http.routers.forms-flow-bpms.rule=Host(`dev-forms-flow-bpm.tech.fr`)
+      - traefik.http.routers.forms-flow-bpms.tls=true
+      - traefik.http.routers.forms-flow-bpms.tls.certresolver=letsencrypt       
     networks:
       - forms-flow-network
  
+  # Base de données forms flow : MongoDB
   forms-flow-forms-db:
     container_name: forms-flow-forms-db
     image: mongo:5.0
@@ -108,8 +122,19 @@ services:
       
     stdin_open: true # -i
     tty: true # -t
+    labels:
+      - traefik.http.routers.forms-flow-form.entrypoints=insecure
+      - traefik.http.routers.forms-flow-form.rule=Host(`dev-forms-flows.tech.fr`)
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.forms-flow-form.middlewares=https-redirect@docker
+      - traefik.http.routers.forms-flow-forms.entrypoints=secure
+      - traefik.http.routers.forms-flow-forms.rule=Host(`dev-forms-flows.tech.fr`)
+      - traefik.http.routers.forms-flow-forms.tls=true
+      - traefik.http.routers.forms-flow-forms.tls.certresolver=letsencrypt      
     networks:
       - forms-flow-network
+    
 
   forms-flow-web:
     container_name: forms-flow-web
@@ -146,7 +171,16 @@ services:
     ports:
       - '3000:8080'
     tty: true
-
+    labels:
+      - traefik.http.routers.forms-flow-web.entrypoints=insecure
+      - traefik.http.routers.forms-flow-web.rule=Host(`dev-forms-flow-web.tech.fr`)
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.forms-flow-web.middlewares=https-redirect@docker
+      - traefik.http.routers.forms-flow-webs.entrypoints=secure
+      - traefik.http.routers.forms-flow-webs.rule=Host(`dev-forms-flow-web.tech.fr`)
+      - traefik.http.routers.forms-flow-webs.tls=true
+      - traefik.http.routers.forms-flow-webs.tls.certresolver=letsencrypt  
     networks:
       - forms-flow-network
 
@@ -201,12 +235,24 @@ services:
       WEB_API_BASE_URL: ${FORMSFLOW_API_URL}
     stdin_open: true # -i
     tty: true # -t
+    labels:
+      - traefik.http.routers.forms-flow-webapi.entrypoints=insecure
+      - traefik.http.routers.forms-flow-webapi.rule=Host(`dev-forms-flow-webapi.tech.fr`)
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+      - traefik.http.routers.forms-flow-webapi.middlewares=https-redirect@docker
+      - traefik.http.routers.forms-flow-webapis.entrypoints=secure
+      - traefik.http.routers.forms-flow-webapis.rule=Host(`dev-forms-flow-webapi.tech.fr`)
+      - traefik.http.routers.forms-flow-webapis.tls=true
+      - traefik.http.routers.forms-flow-webapis.tls.certresolver=letsencrypt       
     networks:
       - forms-flow-network
 
 networks:
   forms-flow-network:
-    driver: 'bridge'
+    #driver: 'bridge'
+    external: 
+      name: web
 
 volumes:
   mdb-data:
